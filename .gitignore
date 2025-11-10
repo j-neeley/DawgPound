@@ -1,3 +1,13 @@
+node_modules/
+.env
+npm-debug.log
+coverage/
+.vscode/
+.DS_Store
+/.idea/
+dist/
+logs/
+*.log
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

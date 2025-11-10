@@ -1,12 +1,29 @@
+// Observability, tracing and error tracking (Sentry + OpenTelemetry)
+require('./observability/otel');
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const promClient = require('prom-client');
 
 const authRoutes = require('./routes/auth');
 const onboardingRoutes = require('./routes/onboarding');
 const adminRoutes = require('./routes/admin');
 
 const app = express();
+
+// Prometheus default metrics
+const collectDefaultMetrics = promClient.collectDefaultMetrics;
+collectDefaultMetrics({ timeout: 5000 });
+
+// /metrics endpoint for Prometheus to scrape
+app.get('/metrics', async (req, res) => {
+	try {
+		res.set('Content-Type', promClient.register.contentType);
+		res.end(await promClient.register.metrics());
+	} catch (ex) {
+		res.status(500).end(ex);
+	}
+});
 
 // Lightweight request logger (no external deps)
 app.use((req, res, next) => {
@@ -36,4 +53,10 @@ app.use((err, req, res, next) => {
 });
 
 const port = process.env.PORT || 4000;
-app.listen(port, () => console.log(`Server listening on http://localhost:${port}`));
+
+// If required directly, export the app for tests. Start server only when run directly.
+if (require.main === module) {
+	app.listen(port, () => console.log(`Server listening on http://localhost:${port}`));
+}
+
+module.exports = app;

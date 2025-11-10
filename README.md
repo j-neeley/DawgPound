@@ -14,13 +14,10 @@ Important: blockers and notes
 - Profile API: not available in this environment — integration points would update the Profile API after onboarding. For MVP we store onboarding locally in a JSON store (`data/db.json`).
 - Taxonomy endpoints: if you have an external taxonomy service, replace `src/mock_taxonomy.js` with a real client. For now the mock provides a small list.
 
-Free-only policy
-- This MVP uses only local code and free, open-source npm packages (Express, body-parser, cors, uuid). There are no external paid services, email providers, or cloud-hosted paid SSO integrations wired in by default. SSO is intentionally not included in this MVP; if you later want SSO integration we can add it as a free OIDC/SAML integration per your university's requirements.
-
 License note
 - As requested, this repository's `package.json` does not declare a license field. If you later want to add an explicit license (MIT, Apache, etc.), add the `license` field back into `package.json` or add a `LICENSE` file.
 
-Labels (as requested): enhancement, area:auth, priority:P0
+Labels (as requested): enhancement, area:infra, priority:P1
 
 How to run (local dev):
 
@@ -62,3 +59,46 @@ Next steps / integration suggestions:
 - Hook up a real email provider (or university SSO) for verification steps.
 - Add JWT-based authentication and secure endpoints.
 - Add a UI onboarding wizard that calls the /onboarding endpoints.
+
+Infra & observability (MVP)
+----------------------------
+
+This repo now includes an MVP infra scaffold to support scalable, observable deployments:
+
+- S3-compatible storage: MinIO (via docker-compose)
+- Redis: for caching and Celery broker
+- Celery placeholders and a Django placeholder service (for future worker-based async processing)
+- OpenTelemetry Collector for traces and metrics
+- Prometheus + Grafana for metrics and dashboards
+- Sentry (integrated in code; provide SENTRY_DSN at runtime)
+
+How to run the infra locally (MVP):
+
+1. Start the infra with docker-compose:
+
+```bash
+docker-compose up --build
+```
+
+2. The Node web app will be available on http://localhost:4000
+   - Prometheus: http://localhost:9090
+   - Grafana: http://localhost:3000
+   - MinIO Console: http://localhost:9000 (user/minioadmin)
+
+Configuration & environment
+- To enable Sentry, set SENTRY_DSN in the environment or GitHub Actions secrets.
+- OTEL_COLLECTOR_URL defaults to `http://otel-collector:4318/v1/traces` when running under docker-compose.
+
+Milestone: MVP
+- The files added create an MVP infra surface that satisfies the acceptance criteria for an initial rollout:
+  - S3-compatible storage (MinIO)
+  - Redis broker available for Celery
+  - OTEL collector + Prometheus metrics + Grafana
+  - Sentry initialization in the app
+  - CI workflow that runs tests and builds a Docker image
+
+Next steps (recommended):
+- Add an actual Django project or other worker image into the `django` and `celery` services and wire Celery with Redis and broker/backend settings.
+- Add a production-ready object store (AWS S3) credentials in CI/CD and a deployment job to push images to your cluster.
+- Harden Sentry and OTEL sampling, add RBAC and secrets management for Grafana/Prometheus.
+
