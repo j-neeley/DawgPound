@@ -8,6 +8,7 @@ const promClient = require('prom-client');
 const authRoutes = require('./routes/auth');
 const onboardingRoutes = require('./routes/onboarding');
 const adminRoutes = require('./routes/admin');
+const groupsRoutes = require('./routes/groups');
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use(bodyParser.json({ limit: '100kb' }));
 app.use('/auth', authRoutes);
 app.use('/onboarding', onboardingRoutes);
 app.use('/admin', adminRoutes);
+app.use('/groups', groupsRoutes);
 
 app.get('/', (req, res) => res.json({ message: 'DawgPound auth-onboarding MVP running' }));
 
