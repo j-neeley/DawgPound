@@ -8,6 +8,13 @@ Features implemented (MVP):
 - Validation: at least one major, and at least three interests/hobbies required to finish onboarding
 - Admin stats endpoint to view onboarding completion and counts of majors/interests
 - Mock taxonomy (majors/interests) to stand in for missing taxonomy service
+- **Public Groups (Forums)**: Discoverable public groups that users can join, with forum threads and replies
+  - Role-based group creation (admin/developer only)
+  - Group categories: class_year, major, interests_activities
+  - Join/leave functionality with member lists
+  - Forum threads with replies
+  - Personalized group recommendations based on major, year, and interests
+  - Search and filter groups by name, category, or tags
 
 
 Important: blockers and notes
@@ -53,6 +60,44 @@ Quick demo flow (curl examples):
 - Admin stats (set environment ADMIN_TOKEN or pass X-Admin-Token header matching ADMIN_TOKEN env):
 
   GET /admin/stats
+
+Public Groups API endpoints:
+
+- Create a group (admin/developer only):
+
+  POST /groups { "name": "CS Students", "category": "major", "tags": ["Computer Science"], "description": "..." }
+  
+- List/search groups:
+
+  GET /groups?search=programming&category=major&tag=Computer%20Science
+  
+- Get recommended groups:
+
+  GET /groups/recommendations
+  
+- Join a group:
+
+  POST /groups/:id/join
+  
+- Leave a group:
+
+  POST /groups/:id/leave
+  
+- Get group members:
+
+  GET /groups/:id/members
+  
+- Create a forum thread:
+
+  POST /groups/:id/threads { "title": "Welcome", "content": "..." }
+  
+- List threads:
+
+  GET /groups/:id/threads
+  
+- Reply to thread:
+
+  POST /groups/:id/threads/:threadId/replies { "content": "..." }
 
 Next steps / integration suggestions:
 - Replace the simple JSON store with your real Profile API writes after onboarding completes.
