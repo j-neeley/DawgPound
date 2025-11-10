@@ -32,6 +32,11 @@ router.post('/', requireUser, requireAdminOrDeveloper, (req, res) => {
     return res.status(400).json({ error: 'name is required' });
   }
   
+  // Sanitize name length
+  if (name.trim().length > 100) {
+    return res.status(400).json({ error: 'name must be 100 characters or less' });
+  }
+  
   if (!category || typeof category !== 'string') {
     return res.status(400).json({ error: 'category is required (class_year, major, interests_activities)' });
   }
@@ -44,7 +49,7 @@ router.post('/', requireUser, requireAdminOrDeveloper, (req, res) => {
   const group = {
     id: uuidv4(),
     name: name.trim(),
-    description: description || '',
+    description: description ? description.substring(0, 500) : '', // Limit description length
     category,
     tags: Array.isArray(tags) ? tags : [],
     createdBy: req.user.id,
@@ -229,8 +234,16 @@ router.post('/:id/threads', requireUser, (req, res) => {
     return res.status(400).json({ error: 'title is required' });
   }
   
+  if (title.trim().length > 200) {
+    return res.status(400).json({ error: 'title must be 200 characters or less' });
+  }
+  
   if (!content || typeof content !== 'string' || content.trim().length === 0) {
     return res.status(400).json({ error: 'content is required' });
+  }
+  
+  if (content.trim().length > 10000) {
+    return res.status(400).json({ error: 'content must be 10000 characters or less' });
   }
   
   const thread = {
@@ -317,6 +330,10 @@ router.post('/:id/threads/:threadId/replies', requireUser, (req, res) => {
   const { content } = req.body;
   if (!content || typeof content !== 'string' || content.trim().length === 0) {
     return res.status(400).json({ error: 'content is required' });
+  }
+  
+  if (content.trim().length > 10000) {
+    return res.status(400).json({ error: 'content must be 10000 characters or less' });
   }
   
   const reply = {
