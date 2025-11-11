@@ -15,6 +15,14 @@ Features implemented (MVP):
   - Forum threads with replies
   - Personalized group recommendations based on major, year, and interests
   - Search and filter groups by name, category, or tags
+- **Private Messaging & Group Chats**: Real-time private messaging with friends
+  - Friend management (add/remove friends)
+  - User blocking functionality
+  - Create private group chats (minimum 2 friends required)
+  - Real-time WebSocket messaging
+  - Message notifications with mute option
+  - Group chat management (rename, avatar, add/remove participants)
+  - Friend and block validation (only friends can be in chats, blocked users rejected)
 
 
 Important: blockers and notes
@@ -98,6 +106,105 @@ Public Groups API endpoints:
 - Reply to thread:
 
   POST /groups/:id/threads/:threadId/replies { "content": "..." }
+
+Friends & Blocking API endpoints:
+
+- Add a friend:
+
+  POST /friends { "friendId": "user-id-here" }
+
+- List friends:
+
+  GET /friends
+
+- Remove a friend:
+
+  DELETE /friends/:friendId
+
+- Block a user:
+
+  POST /friends/block { "userId": "user-id-here" }
+
+- List blocked users:
+
+  GET /friends/blocked
+
+- Unblock a user:
+
+  DELETE /friends/block/:userId
+
+Private Chats API endpoints:
+
+- Create a private group chat (with 2+ friends):
+
+  POST /chats { "name": "My Group", "avatar": "https://...", "participantIds": ["user-2", "user-3"] }
+
+- List user's chats:
+
+  GET /chats
+
+- Get chat details:
+
+  GET /chats/:chatId
+
+- Update chat (rename, change avatar):
+
+  PATCH /chats/:chatId { "name": "New Name", "avatar": "https://..." }
+
+- Add participant to chat:
+
+  POST /chats/:chatId/participants { "userId": "user-id-here" }
+
+- Remove participant from chat:
+
+  DELETE /chats/:chatId/participants/:userId
+
+- Mute/unmute chat:
+
+  POST /chats/:chatId/mute { "mute": true }
+
+- Send a message (REST):
+
+  POST /chats/:chatId/messages { "content": "Hello!" }
+
+- Get messages:
+
+  GET /chats/:chatId/messages?limit=100
+
+WebSocket events (connect to ws://localhost:4000):
+
+- Authenticate:
+
+  emit: authenticate { "userId": "user-id-here" }
+  
+- Join a chat room:
+
+  emit: join_chat { "chatId": "chat-id-here" }
+
+- Send a message:
+
+  emit: send_message { "chatId": "chat-id-here", "content": "Hello!" }
+
+- Receive new message:
+
+  on: new_message { id, chatId, authorId, authorName, content, createdAt }
+
+- Receive notification (if not muted):
+
+  on: message_notification { chatId, chatName, message }
+
+- Send typing indicator:
+
+  emit: typing { "chatId": "chat-id-here" }
+
+- Stop typing:
+
+  emit: stop_typing { "chatId": "chat-id-here" }
+
+- See who's typing:
+
+  on: user_typing { chatId, userId, userName }
+  on: user_stop_typing { chatId, userId }
 
 Next steps / integration suggestions:
 - Replace the simple JSON store with your real Profile API writes after onboarding completes.
