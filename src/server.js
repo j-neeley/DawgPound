@@ -9,6 +9,8 @@ const authRoutes = require('./routes/auth');
 const onboardingRoutes = require('./routes/onboarding');
 const adminRoutes = require('./routes/admin');
 const groupsRoutes = require('./routes/groups');
+const friendsRoutes = require('./routes/friends');
+const chatsRoutes = require('./routes/chats');
 
 const app = express();
 
@@ -44,6 +46,8 @@ app.use('/auth', authRoutes);
 app.use('/onboarding', onboardingRoutes);
 app.use('/admin', adminRoutes);
 app.use('/groups', groupsRoutes);
+app.use('/friends', friendsRoutes);
+app.use('/chats', chatsRoutes);
 
 app.get('/', (req, res) => res.json({ message: 'DawgPound auth-onboarding MVP running' }));
 
@@ -58,7 +62,12 @@ const port = process.env.PORT || 4000;
 
 // If required directly, export the app for tests. Start server only when run directly.
 if (require.main === module) {
-	app.listen(port, () => console.log(`Server listening on http://localhost:${port}`));
+	const server = app.listen(port, () => console.log(`Server listening on http://localhost:${port}`));
+	
+	// Initialize WebSocket server
+	const { initializeWebSocket } = require('./websocket');
+	initializeWebSocket(server);
+	console.log('WebSocket server initialized');
 }
 
 module.exports = app;
