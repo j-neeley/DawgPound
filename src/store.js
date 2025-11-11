@@ -141,6 +141,32 @@ function listRepliesByThread(threadId) {
   return db.replies.filter((x) => x.threadId === threadId);
 }
 
+function deleteThread(id) {
+  const db = readDb();
+  if (!db.threads) db.threads = [];
+  const idx = db.threads.findIndex((x) => x.id === id);
+  if (idx === -1) return false;
+  db.threads.splice(idx, 1);
+  writeDb(db);
+  return true;
+}
+
+function deleteReply(id) {
+  const db = readDb();
+  if (!db.replies) db.replies = [];
+  const idx = db.replies.findIndex((x) => x.id === id);
+  if (idx === -1) return false;
+  db.replies.splice(idx, 1);
+  writeDb(db);
+  return true;
+}
+
+function getReplyById(id) {
+  const db = readDb();
+  if (!db.replies) db.replies = [];
+  return db.replies.find((x) => x.id === id) || null;
+}
+
 module.exports = { 
   createUser, 
   updateUser, 
@@ -156,6 +182,9 @@ module.exports = {
   getThreadById,
   listThreadsByGroup,
   updateThread,
+  deleteThread,
   createReply,
-  listRepliesByThread
+  listRepliesByThread,
+  getReplyById,
+  deleteReply
 };

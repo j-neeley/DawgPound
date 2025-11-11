@@ -1,6 +1,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const store = require('../store');
+const websocket = require('../websocket');
 
 const router = express.Router();
 
@@ -21,6 +22,23 @@ function requireAdminOrDeveloper(req, res, next) {
   if (req.user.role !== 'admin' && req.user.role !== 'developer') {
     return res.status(403).json({ error: 'admin or developer role required' });
   }
+  next();
+}
+
+// Middleware to check if user is a moderator or admin of a group
+function checkGroupModerator(req, res, next) {
+  const group = store.getGroupById(req.params.id);
+  if (!group) return res.status(404).json({ error: 'group not found' });
+  
+  const isModerator = group.moderators && group.moderators.includes(req.user.id);
+  const isCreator = group.createdBy === req.user.id;
+  const isAdmin = req.user.role === 'admin';
+  
+  if (!isModerator && !isCreator && !isAdmin) {
+    return res.status(403).json({ error: 'moderator permissions required' });
+  }
+  
+  req.group = group;
   next();
 }
 
@@ -55,6 +73,7 @@ router.post('/', requireUser, requireAdminOrDeveloper, (req, res) => {
     createdBy: req.user.id,
     createdAt: new Date().toISOString(),
     members: [req.user.id], // creator is auto-member
+    moderators: [], // array of moderator user IDs
     isPublic: true
   };
   
@@ -229,7 +248,7 @@ router.post('/:id/threads', requireUser, (req, res) => {
     return res.status(403).json({ error: 'must be a member to create threads' });
   }
   
-  const { title, content } = req.body;
+  const { title, content, contentType, attachments } = req.body;
   if (!title || typeof title !== 'string' || title.trim().length === 0) {
     return res.status(400).json({ error: 'title is required' });
   }
@@ -246,17 +265,51 @@ router.post('/:id/threads', requireUser, (req, res) => {
     return res.status(400).json({ error: 'content must be 10000 characters or less' });
   }
   
+  // Validate content type (plain, markdown, or html)
+  const validContentTypes = ['plain', 'markdown', 'html'];
+  const selectedContentType = contentType && validContentTypes.includes(contentType) ? contentType : 'plain';
+  
+  // Validate attachments if provided
+  const validatedAttachments = [];
+  if (attachments && Array.isArray(attachments)) {
+    for (const att of attachments) {
+      if (att.url && typeof att.url === 'string') {
+        validatedAttachments.push({
+          id: uuidv4(),
+          url: att.url,
+          filename: att.filename || 'attachment',
+          mimeType: att.mimeType || 'application/octet-stream',
+          size: att.size || 0,
+          virusScanned: att.virusScanned || false,
+          uploadedAt: new Date().toISOString()
+        });
+      }
+    }
+  }
+  
   const thread = {
     id: uuidv4(),
     groupId: req.params.id,
     title: title.trim(),
     content: content.trim(),
+    contentType: selectedContentType,
+    attachments: validatedAttachments,
     authorId: req.user.id,
     createdAt: new Date().toISOString(),
-    replyCount: 0
+    replyCount: 0,
+    isPinned: false,
+    isLocked: false
   };
   
   store.createThread(thread);
+  
+  // Notify via WebSocket
+  const author = store.getUserById(thread.authorId);
+  websocket.notifyThreadCreated(req.params.id, {
+    ...thread,
+    authorName: author ? author.name : 'Unknown'
+  });
+  
   res.status(201).json({ message: 'thread created', thread });
 });
 
@@ -268,8 +321,15 @@ router.get('/:id/threads', requireUser, (req, res) => {
   
   const threads = store.listThreadsByGroup(req.params.id);
   
+  // Sort: pinned threads first, then by creation date (newest first)
+  const sortedThreads = threads.sort((a, b) => {
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+  
   // Enrich with author info
-  const threadsWithAuthor = threads.map(t => {
+  const threadsWithAuthor = sortedThreads.map(t => {
     const author = store.getUserById(t.authorId);
     return {
       ...t,
@@ -327,7 +387,12 @@ router.post('/:id/threads/:threadId/replies', requireUser, (req, res) => {
     return res.status(404).json({ error: 'thread not found in this group' });
   }
   
-  const { content } = req.body;
+  // Check if thread is locked
+  if (thread.isLocked) {
+    return res.status(403).json({ error: 'thread is locked' });
+  }
+  
+  const { content, contentType, attachments } = req.body;
   if (!content || typeof content !== 'string' || content.trim().length === 0) {
     return res.status(400).json({ error: 'content is required' });
   }
@@ -336,10 +401,34 @@ router.post('/:id/threads/:threadId/replies', requireUser, (req, res) => {
     return res.status(400).json({ error: 'content must be 10000 characters or less' });
   }
   
+  // Validate content type
+  const validContentTypes = ['plain', 'markdown', 'html'];
+  const selectedContentType = contentType && validContentTypes.includes(contentType) ? contentType : 'plain';
+  
+  // Validate attachments if provided
+  const validatedAttachments = [];
+  if (attachments && Array.isArray(attachments)) {
+    for (const att of attachments) {
+      if (att.url && typeof att.url === 'string') {
+        validatedAttachments.push({
+          id: uuidv4(),
+          url: att.url,
+          filename: att.filename || 'attachment',
+          mimeType: att.mimeType || 'application/octet-stream',
+          size: att.size || 0,
+          virusScanned: att.virusScanned || false,
+          uploadedAt: new Date().toISOString()
+        });
+      }
+    }
+  }
+  
   const reply = {
     id: uuidv4(),
     threadId: thread.id,
     content: content.trim(),
+    contentType: selectedContentType,
+    attachments: validatedAttachments,
     authorId: req.user.id,
     createdAt: new Date().toISOString()
   };
@@ -350,7 +439,157 @@ router.post('/:id/threads/:threadId/replies', requireUser, (req, res) => {
   thread.replyCount = (thread.replyCount || 0) + 1;
   store.updateThread(thread.id, { replyCount: thread.replyCount });
   
+  // Notify via WebSocket
+  const author = store.getUserById(reply.authorId);
+  websocket.notifyReplyCreated(req.params.id, thread.id, {
+    ...reply,
+    authorName: author ? author.name : 'Unknown'
+  });
+  
   res.status(201).json({ message: 'reply created', reply });
+});
+
+// === Moderation Routes ===
+
+// Add moderator to group (admin/creator only)
+router.post('/:id/moderators', requireUser, (req, res) => {
+  const group = store.getGroupById(req.params.id);
+  if (!group) return res.status(404).json({ error: 'group not found' });
+  
+  const isCreator = group.createdBy === req.user.id;
+  const isAdmin = req.user.role === 'admin';
+  
+  if (!isCreator && !isAdmin) {
+    return res.status(403).json({ error: 'only group creator or admin can add moderators' });
+  }
+  
+  const { userId } = req.body;
+  if (!userId || typeof userId !== 'string') {
+    return res.status(400).json({ error: 'userId is required' });
+  }
+  
+  const targetUser = store.getUserById(userId);
+  if (!targetUser) return res.status(404).json({ error: 'user not found' });
+  
+  // Check if user is a member
+  if (!group.members || !group.members.includes(userId)) {
+    return res.status(400).json({ error: 'user must be a member to become a moderator' });
+  }
+  
+  if (!group.moderators) group.moderators = [];
+  
+  if (group.moderators.includes(userId)) {
+    return res.status(400).json({ error: 'user is already a moderator' });
+  }
+  
+  group.moderators.push(userId);
+  store.updateGroup(group.id, { moderators: group.moderators });
+  
+  res.json({ message: 'moderator added', groupId: group.id, userId });
+});
+
+// Remove moderator from group (admin/creator only)
+router.delete('/:id/moderators/:userId', requireUser, (req, res) => {
+  const group = store.getGroupById(req.params.id);
+  if (!group) return res.status(404).json({ error: 'group not found' });
+  
+  const isCreator = group.createdBy === req.user.id;
+  const isAdmin = req.user.role === 'admin';
+  
+  if (!isCreator && !isAdmin) {
+    return res.status(403).json({ error: 'only group creator or admin can remove moderators' });
+  }
+  
+  if (!group.moderators || !group.moderators.includes(req.params.userId)) {
+    return res.status(400).json({ error: 'user is not a moderator' });
+  }
+  
+  group.moderators = group.moderators.filter(m => m !== req.params.userId);
+  store.updateGroup(group.id, { moderators: group.moderators });
+  
+  res.json({ message: 'moderator removed', groupId: group.id, userId: req.params.userId });
+});
+
+// Pin/unpin thread (moderator/admin only)
+router.patch('/:id/threads/:threadId/pin', requireUser, checkGroupModerator, (req, res) => {
+  const thread = store.getThreadById(req.params.threadId);
+  if (!thread) return res.status(404).json({ error: 'thread not found' });
+  if (thread.groupId !== req.params.id) {
+    return res.status(404).json({ error: 'thread not found in this group' });
+  }
+  
+  const { pinned } = req.body;
+  const isPinned = pinned === true;
+  
+  store.updateThread(thread.id, { isPinned });
+  
+  // Notify via WebSocket
+  websocket.notifyThreadUpdated(req.params.id, thread.id, { isPinned });
+  
+  res.json({ message: isPinned ? 'thread pinned' : 'thread unpinned', threadId: thread.id });
+});
+
+// Lock/unlock thread (moderator/admin only)
+router.patch('/:id/threads/:threadId/lock', requireUser, checkGroupModerator, (req, res) => {
+  const thread = store.getThreadById(req.params.threadId);
+  if (!thread) return res.status(404).json({ error: 'thread not found' });
+  if (thread.groupId !== req.params.id) {
+    return res.status(404).json({ error: 'thread not found in this group' });
+  }
+  
+  const { locked } = req.body;
+  const isLocked = locked === true;
+  
+  store.updateThread(thread.id, { isLocked });
+  
+  // Notify via WebSocket
+  websocket.notifyThreadUpdated(req.params.id, thread.id, { isLocked });
+  
+  res.json({ message: isLocked ? 'thread locked' : 'thread unlocked', threadId: thread.id });
+});
+
+// Delete thread (moderator/admin only)
+router.delete('/:id/threads/:threadId', requireUser, checkGroupModerator, (req, res) => {
+  const thread = store.getThreadById(req.params.threadId);
+  if (!thread) return res.status(404).json({ error: 'thread not found' });
+  if (thread.groupId !== req.params.id) {
+    return res.status(404).json({ error: 'thread not found in this group' });
+  }
+  
+  const deleted = store.deleteThread(thread.id);
+  if (!deleted) return res.status(500).json({ error: 'failed to delete thread' });
+  
+  // Notify via WebSocket
+  websocket.notifyThreadDeleted(req.params.id, thread.id);
+  
+  res.json({ message: 'thread deleted', threadId: thread.id });
+});
+
+// Delete reply (moderator/admin only)
+router.delete('/:id/threads/:threadId/replies/:replyId', requireUser, checkGroupModerator, (req, res) => {
+  const thread = store.getThreadById(req.params.threadId);
+  if (!thread) return res.status(404).json({ error: 'thread not found' });
+  if (thread.groupId !== req.params.id) {
+    return res.status(404).json({ error: 'thread not found in this group' });
+  }
+  
+  const reply = store.getReplyById(req.params.replyId);
+  if (!reply) return res.status(404).json({ error: 'reply not found' });
+  if (reply.threadId !== thread.id) {
+    return res.status(404).json({ error: 'reply not found in this thread' });
+  }
+  
+  const deleted = store.deleteReply(reply.id);
+  if (!deleted) return res.status(500).json({ error: 'failed to delete reply' });
+  
+  // Update thread reply count
+  thread.replyCount = Math.max(0, (thread.replyCount || 0) - 1);
+  store.updateThread(thread.id, { replyCount: thread.replyCount });
+  
+  // Notify via WebSocket
+  websocket.notifyReplyDeleted(req.params.id, thread.id, reply.id);
+  
+  res.json({ message: 'reply deleted', replyId: reply.id });
 });
 
 module.exports = router;
