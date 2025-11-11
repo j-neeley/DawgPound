@@ -41,7 +41,8 @@ router.post('/signup', (req, res) => {
     verificationToken: uuidv4(),
     createdAt: new Date().toISOString(),
     onboarding: null,
-    onboardingCompleted: false
+    onboardingCompleted: false,
+    role: 'user' // default role: user (can be admin or developer)
   };
   store.createUser(user);
 
