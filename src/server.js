@@ -58,7 +58,16 @@ const port = process.env.PORT || 4000;
 
 // If required directly, export the app for tests. Start server only when run directly.
 if (require.main === module) {
-	app.listen(port, () => console.log(`Server listening on http://localhost:${port}`));
+	const http = require('http');
+	const websocket = require('./websocket');
+	
+	const server = http.createServer(app);
+	websocket.initialize(server);
+	
+	server.listen(port, () => {
+		console.log(`Server listening on http://localhost:${port}`);
+		console.log(`WebSocket available at ws://localhost:${port}/ws`);
+	});
 }
 
 module.exports = app;
