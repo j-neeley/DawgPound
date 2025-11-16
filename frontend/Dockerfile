@@ -7,8 +7,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Copy node_modules from local (to avoid SSL issues in build environment)
-COPY node_modules ./node_modules
+# Install all dependencies (including devDependencies needed for build)
+RUN npm install
 
 # Copy source code
 COPY . .
