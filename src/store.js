@@ -174,6 +174,8 @@ function getReplyById(id) {
   const db = readDb();
   if (!db.replies) db.replies = [];
   return db.replies.find((x) => x.id === id) || null;
+}
+
 function getBlock(blockerId, blockedId) {
   const db = readDb();
   if (!db.blocks) db.blocks = [];
@@ -285,13 +287,7 @@ module.exports = {
   createReply,
   listRepliesByThread,
   getReplyById,
-  deleteReply
-  createFriendship,
-  deleteFriendship,
-  getFriendship,
-  listFriendships,
-  createBlock,
-  deleteBlock,
+  deleteReply,
   getBlock,
   listBlocks,
   isBlocked,
