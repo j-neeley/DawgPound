@@ -49,7 +49,313 @@ describe('Friends and Blocking API', () => {
     cleanDb();
   });
   
-  describe('POST /friends - Add Friend', () => {
+  describe('Friend Request Flow', () => {
+    describe('POST /friends/requests - Send Friend Request', () => {
+      test('user can send a friend request', async () => {
+        const res = await request(app)
+          .post('/friends/requests')
+          .set('X-User-Id', user1.id)
+          .send({ userId: user2.id });
+        
+        expect(res.statusCode).toBe(201);
+        expect(res.body.request).toHaveProperty('id');
+        expect(res.body.request.fromUserId).toBe(user1.id);
+        expect(res.body.request.toUserId).toBe(user2.id);
+        expect(res.body.request.status).toBe('pending');
+      });
+      
+      test('cannot send request to self', async () => {
+        const res = await request(app)
+          .post('/friends/requests')
+          .set('X-User-Id', user1.id)
+          .send({ userId: user1.id });
+        
+        expect(res.statusCode).toBe(400);
+        expect(res.body.error).toBe('cannot send friend request to yourself');
+      });
+      
+      test('cannot send request if already friends', async () => {
+        await request(app)
+          .post('/friends')
+          .set('X-User-Id', user1.id)
+          .send({ friendId: user2.id });
+        
+        const res = await request(app)
+          .post('/friends/requests')
+          .set('X-User-Id', user1.id)
+          .send({ userId: user2.id });
+        
+        expect(res.statusCode).toBe(400);
+        expect(res.body.error).toBe('already friends');
+      });
+      
+      test('cannot send request if blocked', async () => {
+        await request(app)
+          .post('/friends/block')
+          .set('X-User-Id', user1.id)
+          .send({ userId: user2.id });
+        
+        const res = await request(app)
+          .post('/friends/requests')
+          .set('X-User-Id', user1.id)
+          .send({ userId: user2.id });
+        
+        expect(res.statusCode).toBe(403);
+        expect(res.body.error).toBe('cannot send friend request due to block');
+      });
+      
+      test('cannot send duplicate request', async () => {
+        await request(app)
+          .post('/friends/requests')
+          .set('X-User-Id', user1.id)
+          .send({ userId: user2.id });
+        
+        const res = await request(app)
+          .post('/friends/requests')
+          .set('X-User-Id', user1.id)
+          .send({ userId: user2.id });
+        
+        expect(res.statusCode).toBe(400);
+        expect(res.body.error).toBe('friend request already pending');
+      });
+      
+      test('cannot send request to non-existent user', async () => {
+        const res = await request(app)
+          .post('/friends/requests')
+          .set('X-User-Id', user1.id)
+          .send({ userId: 'non-existent' });
+        
+        expect(res.statusCode).toBe(404);
+        expect(res.body.error).toBe('user not found');
+      });
+    });
+    
+    describe('GET /friends/requests/incoming - List Incoming Requests', () => {
+      beforeEach(async () => {
+        await request(app)
+          .post('/friends/requests')
+          .set('X-User-Id', user1.id)
+          .send({ userId: user2.id });
+        
+        await request(app)
+          .post('/friends/requests')
+          .set('X-User-Id', user3.id)
+          .send({ userId: user2.id });
+      });
+      
+      test('lists all incoming friend requests', async () => {
+        const res = await request(app)
+          .get('/friends/requests/incoming')
+          .set('X-User-Id', user2.id);
+        
+        expect(res.statusCode).toBe(200);
+        expect(res.body.requests).toHaveLength(2);
+        expect(res.body.requests[0].fromUser).toHaveProperty('id');
+        expect(res.body.requests[0].fromUser).toHaveProperty('name');
+        expect(res.body.requests[0]).toHaveProperty('status', 'pending');
+      });
+      
+      test('returns empty array if no incoming requests', async () => {
+        const res = await request(app)
+          .get('/friends/requests/incoming')
+          .set('X-User-Id', user1.id);
+        
+        expect(res.statusCode).toBe(200);
+        expect(res.body.requests).toHaveLength(0);
+      });
+    });
+    
+    describe('GET /friends/requests/outgoing - List Outgoing Requests', () => {
+      beforeEach(async () => {
+        await request(app)
+          .post('/friends/requests')
+          .set('X-User-Id', user1.id)
+          .send({ userId: user2.id });
+        
+        await request(app)
+          .post('/friends/requests')
+          .set('X-User-Id', user1.id)
+          .send({ userId: user3.id });
+      });
+      
+      test('lists all outgoing friend requests', async () => {
+        const res = await request(app)
+          .get('/friends/requests/outgoing')
+          .set('X-User-Id', user1.id);
+        
+        expect(res.statusCode).toBe(200);
+        expect(res.body.requests).toHaveLength(2);
+        expect(res.body.requests[0].toUser).toHaveProperty('id');
+        expect(res.body.requests[0].toUser).toHaveProperty('name');
+        expect(res.body.requests[0]).toHaveProperty('status', 'pending');
+      });
+    });
+    
+    describe('POST /friends/requests/:requestId/accept - Accept Friend Request', () => {
+      let requestId;
+      
+      beforeEach(async () => {
+        const res = await request(app)
+          .post('/friends/requests')
+          .set('X-User-Id', user1.id)
+          .send({ userId: user2.id });
+        requestId = res.body.request.id;
+      });
+      
+      test('can accept a friend request', async () => {
+        const res = await request(app)
+          .post(`/friends/requests/${requestId}/accept`)
+          .set('X-User-Id', user2.id);
+        
+        expect(res.statusCode).toBe(200);
+        expect(res.body.message).toBe('friend request accepted');
+        expect(res.body.friendship).toHaveProperty('id');
+        
+        // Verify friendship was created
+        const friendship = store.getFriendship(user1.id, user2.id);
+        expect(friendship).not.toBeNull();
+      });
+      
+      test('only recipient can accept request', async () => {
+        const res = await request(app)
+          .post(`/friends/requests/${requestId}/accept`)
+          .set('X-User-Id', user1.id);
+        
+        expect(res.statusCode).toBe(403);
+        expect(res.body.error).toBe('not authorized to accept this request');
+      });
+      
+      test('cannot accept non-existent request', async () => {
+        const res = await request(app)
+          .post('/friends/requests/non-existent/accept')
+          .set('X-User-Id', user2.id);
+        
+        expect(res.statusCode).toBe(404);
+        expect(res.body.error).toBe('friend request not found');
+      });
+      
+      test('cannot accept already accepted request', async () => {
+        await request(app)
+          .post(`/friends/requests/${requestId}/accept`)
+          .set('X-User-Id', user2.id);
+        
+        const res = await request(app)
+          .post(`/friends/requests/${requestId}/accept`)
+          .set('X-User-Id', user2.id);
+        
+        expect(res.statusCode).toBe(400);
+        expect(res.body.error).toBe('request is not pending');
+      });
+      
+      test('request is cancelled if blocked after request was sent', async () => {
+        // Block the requester (this cancels the pending request)
+        await request(app)
+          .post('/friends/block')
+          .set('X-User-Id', user2.id)
+          .send({ userId: user1.id });
+        
+        // The request should no longer exist
+        const res = await request(app)
+          .post(`/friends/requests/${requestId}/accept`)
+          .set('X-User-Id', user2.id);
+        
+        expect(res.statusCode).toBe(404);
+        expect(res.body.error).toBe('friend request not found');
+      });
+    });
+    
+    describe('POST /friends/requests/:requestId/decline - Decline Friend Request', () => {
+      let requestId;
+      
+      beforeEach(async () => {
+        const res = await request(app)
+          .post('/friends/requests')
+          .set('X-User-Id', user1.id)
+          .send({ userId: user2.id });
+        requestId = res.body.request.id;
+      });
+      
+      test('can decline a friend request', async () => {
+        const res = await request(app)
+          .post(`/friends/requests/${requestId}/decline`)
+          .set('X-User-Id', user2.id);
+        
+        expect(res.statusCode).toBe(200);
+        expect(res.body.message).toBe('friend request declined');
+        
+        // Verify no friendship was created
+        const friendship = store.getFriendship(user1.id, user2.id);
+        expect(friendship).toBeNull();
+      });
+      
+      test('only recipient can decline request', async () => {
+        const res = await request(app)
+          .post(`/friends/requests/${requestId}/decline`)
+          .set('X-User-Id', user1.id);
+        
+        expect(res.statusCode).toBe(403);
+        expect(res.body.error).toBe('not authorized to decline this request');
+      });
+      
+      test('cannot decline already declined request', async () => {
+        await request(app)
+          .post(`/friends/requests/${requestId}/decline`)
+          .set('X-User-Id', user2.id);
+        
+        const res = await request(app)
+          .post(`/friends/requests/${requestId}/decline`)
+          .set('X-User-Id', user2.id);
+        
+        expect(res.statusCode).toBe(400);
+        expect(res.body.error).toBe('request is not pending');
+      });
+    });
+    
+    describe('DELETE /friends/requests/:requestId - Cancel Friend Request', () => {
+      let requestId;
+      
+      beforeEach(async () => {
+        const res = await request(app)
+          .post('/friends/requests')
+          .set('X-User-Id', user1.id)
+          .send({ userId: user2.id });
+        requestId = res.body.request.id;
+      });
+      
+      test('sender can cancel friend request', async () => {
+        const res = await request(app)
+          .delete(`/friends/requests/${requestId}`)
+          .set('X-User-Id', user1.id);
+        
+        expect(res.statusCode).toBe(200);
+        expect(res.body.message).toBe('friend request cancelled');
+        
+        // Verify request was deleted
+        const deletedRequest = store.getFriendRequest(requestId);
+        expect(deletedRequest).toBeNull();
+      });
+      
+      test('only sender can cancel request', async () => {
+        const res = await request(app)
+          .delete(`/friends/requests/${requestId}`)
+          .set('X-User-Id', user2.id);
+        
+        expect(res.statusCode).toBe(403);
+        expect(res.body.error).toBe('not authorized to cancel this request');
+      });
+      
+      test('cannot cancel non-existent request', async () => {
+        const res = await request(app)
+          .delete('/friends/requests/non-existent')
+          .set('X-User-Id', user1.id);
+        
+        expect(res.statusCode).toBe(404);
+        expect(res.body.error).toBe('friend request not found');
+      });
+    });
+  });
+  
+  describe('POST /friends - Add Friend (Instant)', () => {
     test('user can add a friend', async () => {
       const res = await request(app)
         .post('/friends')
@@ -200,6 +506,25 @@ describe('Friends and Blocking API', () => {
       // Verify friendship is gone
       const friendship = store.getFriendship(user1.id, user2.id);
       expect(friendship).toBeNull();
+    });
+    
+    test('blocking cancels pending friend requests', async () => {
+      // Send friend request
+      const reqRes = await request(app)
+        .post('/friends/requests')
+        .set('X-User-Id', user1.id)
+        .send({ userId: user2.id });
+      const requestId = reqRes.body.request.id;
+      
+      // Block them
+      await request(app)
+        .post('/friends/block')
+        .set('X-User-Id', user1.id)
+        .send({ userId: user2.id });
+      
+      // Verify request was cancelled
+      const cancelledRequest = store.getFriendRequest(requestId);
+      expect(cancelledRequest).toBeNull();
     });
     
     test('cannot block self', async () => {

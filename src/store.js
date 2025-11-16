@@ -13,6 +13,7 @@ function ensureDb() {
       threads: [], 
       replies: [],
       friendships: [],
+      friendRequests: [],
       blocks: [],
       privateChats: [],
       messages: []
@@ -324,6 +325,77 @@ function deleteMessage(id) {
   return true;
 }
 
+// === Friend Request functions ===
+
+function createFriendRequest(request) {
+  const db = readDb();
+  if (!db.friendRequests) db.friendRequests = [];
+  db.friendRequests.push(request);
+  writeDb(db);
+  return request;
+}
+
+function getFriendRequest(id) {
+  const db = readDb();
+  if (!db.friendRequests) db.friendRequests = [];
+  return db.friendRequests.find(r => r.id === id) || null;
+}
+
+function findPendingFriendRequest(fromUserId, toUserId) {
+  const db = readDb();
+  if (!db.friendRequests) db.friendRequests = [];
+  // Check both directions for pending requests
+  return db.friendRequests.find(r => 
+    r.status === 'pending' &&
+    ((r.fromUserId === fromUserId && r.toUserId === toUserId) ||
+     (r.fromUserId === toUserId && r.toUserId === fromUserId))
+  ) || null;
+}
+
+function updateFriendRequest(id, patch) {
+  const db = readDb();
+  if (!db.friendRequests) db.friendRequests = [];
+  const request = db.friendRequests.find(r => r.id === id);
+  if (!request) return null;
+  Object.assign(request, patch);
+  writeDb(db);
+  return request;
+}
+
+function listIncomingFriendRequests(userId) {
+  const db = readDb();
+  if (!db.friendRequests) db.friendRequests = [];
+  return db.friendRequests.filter(r => r.toUserId === userId && r.status === 'pending');
+}
+
+function listOutgoingFriendRequests(userId) {
+  const db = readDb();
+  if (!db.friendRequests) db.friendRequests = [];
+  return db.friendRequests.filter(r => r.fromUserId === userId && r.status === 'pending');
+}
+
+function deleteFriendRequest(id) {
+  const db = readDb();
+  if (!db.friendRequests) db.friendRequests = [];
+  const idx = db.friendRequests.findIndex(r => r.id === id);
+  if (idx === -1) return false;
+  db.friendRequests.splice(idx, 1);
+  writeDb(db);
+  return true;
+}
+
+function cancelPendingFriendRequests(userId1, userId2) {
+  const db = readDb();
+  if (!db.friendRequests) db.friendRequests = [];
+  // Cancel any pending requests between these two users
+  db.friendRequests = db.friendRequests.filter(r => 
+    !(r.status === 'pending' &&
+      ((r.fromUserId === userId1 && r.toUserId === userId2) ||
+       (r.fromUserId === userId2 && r.toUserId === userId1)))
+  );
+  writeDb(db);
+}
+
 module.exports = { 
   createUser, 
   updateUser, 
@@ -348,6 +420,14 @@ module.exports = {
   getFriendship,
   deleteFriendship,
   listFriendships,
+  createFriendRequest,
+  getFriendRequest,
+  findPendingFriendRequest,
+  updateFriendRequest,
+  listIncomingFriendRequests,
+  listOutgoingFriendRequests,
+  deleteFriendRequest,
+  cancelPendingFriendRequests,
   createBlock,
   deleteBlock,
   getBlock,
