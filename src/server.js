@@ -11,6 +11,8 @@ const adminRoutes = require('./routes/admin');
 const groupsRoutes = require('./routes/groups');
 const friendsRoutes = require('./routes/friends');
 const chatsRoutes = require('./routes/chats');
+const usersRoutes = require('./routes/users');
+const discoveryRoutes = require('./routes/discovery');
 
 const app = express();
 
@@ -48,6 +50,8 @@ app.use('/admin', adminRoutes);
 app.use('/groups', groupsRoutes);
 app.use('/friends', friendsRoutes);
 app.use('/chats', chatsRoutes);
+app.use('/users', usersRoutes);
+app.use('/discovery', discoveryRoutes);
 
 app.get('/', (req, res) => res.json({ message: 'DawgPound auth-onboarding MVP running' }));
 

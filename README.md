@@ -21,8 +21,15 @@ Features implemented (MVP):
     - Lock/unlock threads (prevents replies)
     - Delete threads and replies
   - **WebSocket real-time updates**: live notifications for thread/reply creation, updates, and deletions
-  - Personalized group recommendations based on major, year, and interests
+  - Personalized group recommendations based on major, year, interests, and group overlap
   - Search and filter groups by name, category, or tags
+- **Discovery & Recommendations**: Find public groups and users based on shared interests, majors, year, and group memberships
+  - **User recommendations**: Discover other users with similar profiles
+  - **User search**: Search users by name or email
+  - **Unified discovery feed**: Combined recommendations for groups and users (for onboarding and discovery UI)
+  - Recommendation algorithm considers interests, majors, year of study, and group overlap
+  - Private group chats excluded from public discovery (as required)
+  - Respects blocking: blocked users are excluded from recommendations
 - **Private Messaging & Group Chats**: Real-time private messaging with friends
   - **Friend request system** (send/accept/decline friend requests)
   - Friend management (list friends, remove friends)
@@ -169,6 +176,20 @@ WebSocket real-time updates:
   - thread_updated (pin/lock status)
   - thread_deleted
   - reply_deleted
+
+Discovery & Recommendations API endpoints:
+
+- Get recommended users (based on interests, majors, year, and group overlap):
+
+  GET /users/recommendations
+
+- Search for users by name or email:
+
+  GET /users/search?q=alice
+
+- Get unified discovery feed (groups + users for onboarding/discovery UI):
+
+  GET /discovery/feed
 
 Friends & Blocking API endpoints:
 
