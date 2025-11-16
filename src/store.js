@@ -150,62 +150,30 @@ function listRepliesByThread(threadId) {
   return db.replies.filter((x) => x.threadId === threadId);
 }
 
-// === Friendship functions ===
-
-function createFriendship(friendship) {
+function deleteThread(id) {
   const db = readDb();
-  if (!db.friendships) db.friendships = [];
-  db.friendships.push(friendship);
-  writeDb(db);
-  return friendship;
-}
-
-function deleteFriendship(userId1, userId2) {
-  const db = readDb();
-  if (!db.friendships) db.friendships = [];
-  const idx = db.friendships.findIndex(f => 
-    (f.userId1 === userId1 && f.userId2 === userId2) ||
-    (f.userId1 === userId2 && f.userId2 === userId1)
-  );
+  if (!db.threads) db.threads = [];
+  const idx = db.threads.findIndex((x) => x.id === id);
   if (idx === -1) return false;
-  db.friendships.splice(idx, 1);
+  db.threads.splice(idx, 1);
   writeDb(db);
   return true;
 }
 
-function getFriendship(userId1, userId2) {
+function deleteReply(id) {
   const db = readDb();
-  if (!db.friendships) db.friendships = [];
-  return db.friendships.find(f => 
-    (f.userId1 === userId1 && f.userId2 === userId2) ||
-    (f.userId1 === userId2 && f.userId2 === userId1)
-  ) || null;
-}
-
-function listFriendships(userId) {
-  const db = readDb();
-  if (!db.friendships) db.friendships = [];
-  return db.friendships.filter(f => f.userId1 === userId || f.userId2 === userId);
-}
-
-// === Block functions ===
-
-function createBlock(block) {
-  const db = readDb();
-  if (!db.blocks) db.blocks = [];
-  db.blocks.push(block);
-  writeDb(db);
-  return block;
-}
-
-function deleteBlock(blockerId, blockedId) {
-  const db = readDb();
-  if (!db.blocks) db.blocks = [];
-  const idx = db.blocks.findIndex(b => b.blockerId === blockerId && b.blockedId === blockedId);
+  if (!db.replies) db.replies = [];
+  const idx = db.replies.findIndex((x) => x.id === id);
   if (idx === -1) return false;
-  db.blocks.splice(idx, 1);
+  db.replies.splice(idx, 1);
   writeDb(db);
   return true;
+}
+
+function getReplyById(id) {
+  const db = readDb();
+  if (!db.replies) db.replies = [];
+  return db.replies.find((x) => x.id === id) || null;
 }
 
 function getBlock(blockerId, blockedId) {
@@ -228,6 +196,62 @@ function isBlocked(userId1, userId2) {
     (b.blockerId === userId1 && b.blockedId === userId2) ||
     (b.blockerId === userId2 && b.blockedId === userId1)
   );
+}
+
+function createBlock(block) {
+  const db = readDb();
+  if (!db.blocks) db.blocks = [];
+  db.blocks.push(block);
+  writeDb(db);
+  return block;
+}
+
+function deleteBlock(blockerId, blockedId) {
+  const db = readDb();
+  if (!db.blocks) db.blocks = [];
+  const idx = db.blocks.findIndex(b => b.blockerId === blockerId && b.blockedId === blockedId);
+  if (idx === -1) return false;
+  db.blocks.splice(idx, 1);
+  writeDb(db);
+  return true;
+}
+
+// === Friendship functions ===
+
+function createFriendship(friendship) {
+  const db = readDb();
+  if (!db.friendships) db.friendships = [];
+  db.friendships.push(friendship);
+  writeDb(db);
+  return friendship;
+}
+
+function getFriendship(userId1, userId2) {
+  const db = readDb();
+  if (!db.friendships) db.friendships = [];
+  return db.friendships.find(f => 
+    (f.userId1 === userId1 && f.userId2 === userId2) ||
+    (f.userId1 === userId2 && f.userId2 === userId1)
+  ) || null;
+}
+
+function deleteFriendship(userId1, userId2) {
+  const db = readDb();
+  if (!db.friendships) db.friendships = [];
+  const idx = db.friendships.findIndex(f => 
+    (f.userId1 === userId1 && f.userId2 === userId2) ||
+    (f.userId1 === userId2 && f.userId2 === userId1)
+  );
+  if (idx === -1) return false;
+  db.friendships.splice(idx, 1);
+  writeDb(db);
+  return true;
+}
+
+function listFriendships(userId) {
+  const db = readDb();
+  if (!db.friendships) db.friendships = [];
+  return db.friendships.filter(f => f.userId1 === userId || f.userId2 === userId);
 }
 
 // === Private Chat functions ===
@@ -315,11 +339,14 @@ module.exports = {
   getThreadById,
   listThreadsByGroup,
   updateThread,
+  deleteThread,
   createReply,
   listRepliesByThread,
+  getReplyById,
+  deleteReply,
   createFriendship,
-  deleteFriendship,
   getFriendship,
+  deleteFriendship,
   listFriendships,
   createBlock,
   deleteBlock,
