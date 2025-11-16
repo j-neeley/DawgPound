@@ -69,6 +69,7 @@ docker-compose up --build
 ```
 
 Services will be available at:
+- **Frontend UI**: http://localhost:8080 (React application)
 - Node.js API: http://localhost:4000
 - Django API: http://localhost:8000
 - Django Admin: http://localhost:8000/admin/ (admin/admin123)
@@ -76,6 +77,8 @@ Services will be available at:
 - Prometheus: http://localhost:9090
 - Grafana: http://localhost:3000
 - MinIO Console: http://localhost:9000
+
+**Note**: The frontend UI is now integrated into the Docker Compose stack! When you run `docker-compose up`, the React application will be built and served via nginx on port 8080. API requests from the UI are automatically proxied to the Node.js backend (port 4000), and WebSocket connections work seamlessly.
 
 ### Option 2: Node.js Backend Only (MVP)
 
@@ -446,10 +449,38 @@ How to run the infra locally (MVP):
 docker-compose up --build
 ```
 
-2. The Node web app will be available on http://localhost:4000
+2. Services will be available:
+   - **Frontend UI**: http://localhost:8080
+   - Node.js API: http://localhost:4000
    - Prometheus: http://localhost:9090
    - Grafana: http://localhost:3000
    - MinIO Console: http://localhost:9000 (user/minioadmin)
+
+### Running Frontend in Docker
+
+The React frontend is now fully integrated into the Docker Compose stack. The frontend service:
+- **Builds** the React application during `docker-compose up --build`
+- **Serves** static files via nginx
+- **Proxies** API requests to the Node.js backend at `/api/*` → `http://web:4000/`
+- **Proxies** WebSocket connections at `/ws` → `http://web:4000/ws`
+- **Runs** on port 8080 (avoiding conflicts with Grafana on port 3000)
+
+To run just the frontend service:
+```bash
+docker-compose up --build frontend web redis minio
+```
+
+To rebuild only the frontend:
+```bash
+docker-compose up --build frontend
+```
+
+The frontend Dockerfile uses a multi-stage build:
+1. **Build stage**: Compiles TypeScript and builds React app with Vite
+2. **Serve stage**: Serves static files with nginx
+
+Note: In the development environment, you can still run the frontend locally with `npm run dev` in the `frontend/` directory for hot-reloading.
+
 
 Configuration & environment
 - To enable Sentry, set SENTRY_DSN in the environment or GitHub Actions secrets.

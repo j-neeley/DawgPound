@@ -40,6 +40,8 @@ npm install
 
 ### Development
 
+#### Option 1: Local Development with Hot Reload
+
 Start the dev server (backend must be running on port 4000):
 
 ```bash
@@ -47,6 +49,16 @@ npm run dev
 ```
 
 The app will be available at `http://localhost:3000`.
+
+#### Option 2: Docker (Production-like)
+
+Run the frontend with Docker Compose from the repository root:
+
+```bash
+docker-compose up --build frontend web redis minio
+```
+
+The app will be available at `http://localhost:8080` and served via nginx with built static files.
 
 ### Building
 
@@ -60,6 +72,19 @@ npm run build
 npm test
 ```
 
+## Docker Deployment
+
+The frontend includes a multi-stage Dockerfile for production deployment:
+
+- **Build stage**: Uses `node:20` to compile TypeScript and build with Vite
+- **Serve stage**: Uses `nginx:alpine` to serve static files
+
+The nginx configuration automatically proxies:
+- API requests (`/api/*`) to the Node.js backend
+- WebSocket connections (`/ws`) to the backend
+
+See the main repository README for full Docker Compose instructions.
+
 ## Component Library
 
 - **Button** - Variants: primary, secondary, danger, ghost
@@ -69,5 +94,5 @@ npm test
 
 ## API Integration
 
-- **REST API**: Proxied through `/api` to `http://localhost:4000`
-- **WebSocket**: Proxied through `/ws` to `ws://localhost:4000/ws`
+- **REST API**: Proxied through `/api` to backend (port 4000 in dev, or `web` service in Docker)
+- **WebSocket**: Proxied through `/ws` to backend WebSocket endpoint
