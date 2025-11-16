@@ -126,6 +126,13 @@ router.get('/recommendations', requireUser, (req, res) => {
   const userInterests = onboarding.interests_hobbies || [];
   const userYear = onboarding.year_of_study;
   
+  // Get user's friend list for group overlap scoring
+  const friendIds = new Set();
+  store.listFriendships(user.id).forEach(f => {
+    const friendId = f.userId1 === user.id ? f.userId2 : f.userId1;
+    friendIds.add(friendId);
+  });
+  
   // Score each group by relevance
   const scoredGroups = allGroups.map(g => {
     let score = 0;
@@ -150,6 +157,12 @@ router.get('/recommendations', requireUser, (req, res) => {
       if (g.tags.includes(userYear)) {
         score += 15;
       }
+    }
+    
+    // Group overlap: boost groups where user's friends are members
+    if (g.members) {
+      const friendsInGroup = g.members.filter(memberId => friendIds.has(memberId));
+      score += friendsInGroup.length * 7;
     }
     
     return { group: g, score };
