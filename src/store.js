@@ -7,7 +7,16 @@ function ensureDb() {
   const dir = path.dirname(DB_PATH);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   if (!fs.existsSync(DB_PATH)) {
-    fs.writeFileSync(DB_PATH, JSON.stringify({ users: [], groups: [], threads: [], replies: [] }, null, 2));
+    fs.writeFileSync(DB_PATH, JSON.stringify({ 
+      users: [], 
+      groups: [], 
+      threads: [], 
+      replies: [],
+      friendships: [],
+      blocks: [],
+      privateChats: [],
+      messages: []
+    }, null, 2));
   }
 }
 
@@ -165,6 +174,96 @@ function getReplyById(id) {
   const db = readDb();
   if (!db.replies) db.replies = [];
   return db.replies.find((x) => x.id === id) || null;
+function getBlock(blockerId, blockedId) {
+  const db = readDb();
+  if (!db.blocks) db.blocks = [];
+  return db.blocks.find(b => b.blockerId === blockerId && b.blockedId === blockedId) || null;
+}
+
+function listBlocks(userId) {
+  const db = readDb();
+  if (!db.blocks) db.blocks = [];
+  return db.blocks.filter(b => b.blockerId === userId);
+}
+
+function isBlocked(userId1, userId2) {
+  const db = readDb();
+  if (!db.blocks) db.blocks = [];
+  // Check if either user has blocked the other
+  return db.blocks.some(b => 
+    (b.blockerId === userId1 && b.blockedId === userId2) ||
+    (b.blockerId === userId2 && b.blockedId === userId1)
+  );
+}
+
+// === Private Chat functions ===
+
+function createPrivateChat(chat) {
+  const db = readDb();
+  if (!db.privateChats) db.privateChats = [];
+  db.privateChats.push(chat);
+  writeDb(db);
+  return chat;
+}
+
+function updatePrivateChat(id, patch) {
+  const db = readDb();
+  if (!db.privateChats) db.privateChats = [];
+  const chat = db.privateChats.find(c => c.id === id);
+  if (!chat) return null;
+  Object.assign(chat, patch);
+  writeDb(db);
+  return chat;
+}
+
+function getPrivateChatById(id) {
+  const db = readDb();
+  if (!db.privateChats) db.privateChats = [];
+  return db.privateChats.find(c => c.id === id) || null;
+}
+
+function listPrivateChatsForUser(userId) {
+  const db = readDb();
+  if (!db.privateChats) db.privateChats = [];
+  return db.privateChats.filter(c => c.participants && c.participants.includes(userId));
+}
+
+function deletePrivateChat(id) {
+  const db = readDb();
+  if (!db.privateChats) db.privateChats = [];
+  const idx = db.privateChats.findIndex(c => c.id === id);
+  if (idx === -1) return false;
+  db.privateChats.splice(idx, 1);
+  writeDb(db);
+  return true;
+}
+
+// === Message functions ===
+
+function createMessage(message) {
+  const db = readDb();
+  if (!db.messages) db.messages = [];
+  db.messages.push(message);
+  writeDb(db);
+  return message;
+}
+
+function listMessagesByChat(chatId, limit = 100) {
+  const db = readDb();
+  if (!db.messages) db.messages = [];
+  const messages = db.messages.filter(m => m.chatId === chatId);
+  // Return most recent messages first
+  return messages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, limit);
+}
+
+function deleteMessage(id) {
+  const db = readDb();
+  if (!db.messages) db.messages = [];
+  const idx = db.messages.findIndex(m => m.id === id);
+  if (idx === -1) return false;
+  db.messages.splice(idx, 1);
+  writeDb(db);
+  return true;
 }
 
 module.exports = { 
@@ -187,4 +286,21 @@ module.exports = {
   listRepliesByThread,
   getReplyById,
   deleteReply
+  createFriendship,
+  deleteFriendship,
+  getFriendship,
+  listFriendships,
+  createBlock,
+  deleteBlock,
+  getBlock,
+  listBlocks,
+  isBlocked,
+  createPrivateChat,
+  updatePrivateChat,
+  getPrivateChatById,
+  listPrivateChatsForUser,
+  deletePrivateChat,
+  createMessage,
+  listMessagesByChat,
+  deleteMessage
 };
