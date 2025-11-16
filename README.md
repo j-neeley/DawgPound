@@ -1,6 +1,14 @@
 # DawgPound — Auth & Onboarding MVP
 
-This small demo implements the requested MVP authentication and onboarding flows for DawgPound. It's intentionally minimal and self-contained so you can run it locally.
+This repository implements the requested MVP authentication and onboarding flows for DawgPound with both Node.js and Django backend options.
+
+## Architecture Overview
+
+DawgPound now includes two backend implementations:
+1. **Node.js/Express** (MVP prototype) - Located in `src/`
+2. **Django REST Framework** (Production-ready) - Located in `backend/`
+
+Both backends provide the same features and can run simultaneously or independently.
 
 Features implemented (MVP):
 - University email signup with verification token (demo returns token instead of sending email)
@@ -48,7 +56,28 @@ Important: blockers and notes
 License note
 - As requested, this repository's `package.json` does not declare a license field. If you later want to add an explicit license (MIT, Apache, etc.), add the `license` field back into `package.json` or add a `LICENSE` file.
 
-Labels (as requested): enhancement, area:infra, priority:P1
+Labels (as requested): enhancement, area:infra, area:backend, area:django, priority:P1
+
+## Quick Start
+
+### Option 1: Docker Compose (Recommended - All Services)
+
+Run both Node.js and Django backends with all infrastructure:
+
+```bash
+docker-compose up --build
+```
+
+Services will be available at:
+- Node.js API: http://localhost:4000
+- Django API: http://localhost:8000
+- Django Admin: http://localhost:8000/admin/ (admin/admin123)
+- API Docs: http://localhost:8000/api/docs/
+- Prometheus: http://localhost:9090
+- Grafana: http://localhost:3000
+- MinIO Console: http://localhost:9000
+
+### Option 2: Node.js Backend Only (MVP)
 
 How to run (local dev):
 
@@ -329,6 +358,73 @@ Next steps / integration suggestions:
 - **File uploads**: Implement actual file upload endpoint that integrates with S3/MinIO and virus scanning service.
 - **WebSocket authentication**: Currently uses query params for demo purposes; implement JWT-based WebSocket auth for production.
 
+## Django Backend
+
+The Django backend provides a production-ready, scalable alternative to the Node.js MVP with the following advantages:
+
+### Features
+- **Django REST Framework** for robust API development
+- **PostgreSQL** database with proper migrations
+- **JWT Authentication** via djangorestframework-simplejwt
+- **Django Channels** for WebSocket support (real-time features)
+- **Celery** for async task processing
+- **Redis** for caching and message broker
+- **Admin Interface** for content management
+- **API Documentation** via drf-spectacular (Swagger/ReDoc)
+- **Comprehensive Testing** with pytest
+- **Database Models** for all features (users, groups, forums, messaging, moderation)
+
+### Quick Start - Django
+
+1. **View documentation**: See [DJANGO_SETUP.md](./DJANGO_SETUP.md) for comprehensive setup guide
+
+2. **Run with Docker Compose**:
+```bash
+docker-compose up django postgres redis
+```
+
+3. **Access Django services**:
+   - API: http://localhost:8000
+   - Admin: http://localhost:8000/admin/ (admin/admin123)
+   - API Docs: http://localhost:8000/api/docs/
+
+4. **Run locally without Docker**:
+```bash
+cd backend
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver 0.0.0.0:8000
+```
+
+### Django API Endpoints
+
+See full API documentation at http://localhost:8000/api/docs/ or refer to [DJANGO_SETUP.md](./DJANGO_SETUP.md)
+
+Key endpoints:
+- `POST /api/token/` - Obtain JWT token
+- `POST /api/auth/signup/` - User registration
+- `GET /api/groups/` - List groups
+- `POST /api/groups/{id}/join/` - Join group
+- `GET /api/forums/groups/{id}/threads/` - List forum threads
+- `POST /api/messages/chats/` - Create private chat
+
+### Testing Django Backend
+
+```bash
+cd backend
+pytest
+```
+
+### Django Apps Structure
+
+- **users**: User management, authentication, friends
+- **groups**: Public groups and communities
+- **forums**: Forum threads and replies
+- **messaging**: Private chats and messages
+- **moderation**: Moderation tools and logs
+- **core**: Shared utilities
+
 Infra & observability (MVP)
 ----------------------------
 
@@ -336,7 +432,8 @@ This repo now includes an MVP infra scaffold to support scalable, observable dep
 
 - S3-compatible storage: MinIO (via docker-compose)
 - Redis: for caching and Celery broker
-- Celery placeholders and a Django placeholder service (for future worker-based async processing)
+- **Django Backend**: Production-ready REST API with PostgreSQL
+- **Celery**: Async task processing (configured for Django)
 - OpenTelemetry Collector for traces and metrics
 - Prometheus + Grafana for metrics and dashboards
 - Sentry (integrated in code; provide SENTRY_DSN at runtime)
