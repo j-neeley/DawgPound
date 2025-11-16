@@ -24,8 +24,9 @@ Features implemented (MVP):
   - Personalized group recommendations based on major, year, and interests
   - Search and filter groups by name, category, or tags
 - **Private Messaging & Group Chats**: Real-time private messaging with friends
-  - Friend management (add/remove friends)
-  - User blocking functionality
+  - **Friend request system** (send/accept/decline friend requests)
+  - Friend management (list friends, remove friends)
+  - User blocking functionality (blocks messaging and friend requests)
   - Create private group chats (minimum 2 friends required)
   - Real-time WebSocket messaging
   - Message notifications with mute option
@@ -171,7 +172,35 @@ WebSocket real-time updates:
 
 Friends & Blocking API endpoints:
 
-- Add a friend:
+Friend Request Flow:
+
+- Send a friend request:
+
+  POST /friends/requests { "userId": "user-id-here" }
+
+- List incoming friend requests:
+
+  GET /friends/requests/incoming
+
+- List outgoing friend requests:
+
+  GET /friends/requests/outgoing
+
+- Accept a friend request:
+
+  POST /friends/requests/:requestId/accept
+
+- Decline a friend request:
+
+  POST /friends/requests/:requestId/decline
+
+- Cancel an outgoing friend request:
+
+  DELETE /friends/requests/:requestId
+
+Friends Management:
+
+- Add a friend (instant, for backward compatibility):
 
   POST /friends { "friendId": "user-id-here" }
 
@@ -183,7 +212,9 @@ Friends & Blocking API endpoints:
 
   DELETE /friends/:friendId
 
-- Block a user:
+Blocking:
+
+- Block a user (removes friendship and cancels pending requests):
 
   POST /friends/block { "userId": "user-id-here" }
 
