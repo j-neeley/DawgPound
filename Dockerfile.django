@@ -12,13 +12,23 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    g++ \
+    libpq-dev \
+    libssl-dev \
+    libffi-dev \
+    python3-dev \
     postgresql-client \
     netcat-openbsd \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+# Update CA certificates and pip
+RUN update-ca-certificates && \
+    pip install --upgrade pip setuptools wheel
 
 # Install Python dependencies
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org -r requirements.txt
 
 # Copy project
 COPY backend/ .
