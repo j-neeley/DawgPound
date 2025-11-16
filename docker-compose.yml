@@ -61,13 +61,50 @@ services:
     depends_on:
       - prometheus
 
-  django (placeholder):
-    image: python:3.11-slim
-    command: ["sleep", "infinity"]
+  django:
+    build:
+      context: .
+      dockerfile: Dockerfile.django
+    ports:
+      - '8000:8000'
+    environment:
+      - DEBUG=True
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-dev-key}
+      - POSTGRES_DB=dawg
+      - POSTGRES_USER=dp
+      - POSTGRES_PASSWORD=dp
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - ALLOWED_HOSTS=*
+    depends_on:
+      - postgres
+      - redis
 
-  celery (placeholder):
-    image: python:3.11-slim
-    command: ["sleep", "infinity"]
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile.django
+    command: celery -A dawgpound worker -l info
+    environment:
+      - DEBUG=True
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-dev-key}
+      - POSTGRES_DB=dawg
+      - POSTGRES_USER=dp
+      - POSTGRES_PASSWORD=dp
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+      - django
 
 volumes:
   minio_data:
