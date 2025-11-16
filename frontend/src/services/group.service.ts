@@ -1,5 +1,5 @@
 import apiClient from './api';
-import { Group, Thread, Reply } from '../types';
+import type { Group, Thread, Reply } from '../types';
 
 export const groupService = {
   // Groups

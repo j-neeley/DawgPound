@@ -1,5 +1,5 @@
 import apiClient from './api';
-import { Chat, Message } from '../types';
+import type { Chat, Message } from '../types';
 
 export const messagingService = {
   // Chats

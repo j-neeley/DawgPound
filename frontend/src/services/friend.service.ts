@@ -1,5 +1,5 @@
 import apiClient from './api';
-import { FriendRequest, Friendship, User } from '../types';
+import type { FriendRequest, Friendship, User } from '../types';
 
 export const friendService = {
   // Friend Requests

@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useEffect, ReactNode } from 'react';
-import { Socket } from 'socket.io-client';
+import React, { createContext, useContext, useEffect, type ReactNode } from 'react';
+import type { Socket } from 'socket.io-client';
 import wsService from '../services/websocket';
 import { useAuth } from './AuthContext';
 

@@ -1,5 +1,5 @@
 import apiClient from './api';
-import { User, DiscoveryFeed } from '../types';
+import type { User, DiscoveryFeed } from '../types';
 
 export const discoveryService = {
   getUserRecommendations: async (): Promise<any[]> => {

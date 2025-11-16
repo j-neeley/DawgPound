@@ -1,5 +1,5 @@
 import apiClient from './api';
-import { AdminStats } from '../types';
+import type { AdminStats } from '../types';
 
 export const adminService = {
   getStats: async (): Promise<AdminStats> => {
