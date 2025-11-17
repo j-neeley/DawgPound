@@ -1,103 +1,85 @@
-# DawgPound — Auth & Onboarding MVP
+# DawgPound — Django Backend
 
-This repository implements the requested MVP authentication and onboarding flows for DawgPound with both Node.js and Django backend options.
+This repository implements a simplified Django-only backend for DawgPound social platform.
 
 ## Architecture Overview
 
-DawgPound now includes two backend implementations:
-1. **Node.js/Express** (MVP prototype) - Located in `src/`
-2. **Django REST Framework** (Production-ready) - Located in `backend/`
+**Django REST Framework** backend located in `backend/` directory.
+- SQLite database for development (configurable to PostgreSQL via environment variable)
+- Session-based authentication
+- Simple signup/login system
 
-Both backends provide the same features and can run simultaneously or independently.
+## Features
 
-Features implemented (MVP):
-- University email signup with verification token (demo returns token instead of sending email)
-- Onboarding wizard endpoints that capture majors, interests/hobbies, year, graduation year, and privacy settings
-- Validation: at least one major, and at least three interests/hobbies required to finish onboarding
-- Admin stats endpoint to view onboarding completion and counts of majors/interests
-- Mock taxonomy (majors/interests) to stand in for missing taxonomy service
-- **Public Groups (Forums)**: Discoverable public groups that users can join, with forum threads and replies
-  - Role-based group creation (admin/developer only)
-  - Group categories: class_year, major, interests_activities
-  - Join/leave functionality with member lists
-  - Forum threads with replies
-  - **Rich text support**: plain, markdown, or HTML content
-  - **Attachments**: support for file attachments with virus scan tracking
-  - **Moderation features**:
-    - Moderator role management (add/remove moderators)
-    - Pin/unpin threads
-    - Lock/unlock threads (prevents replies)
-    - Delete threads and replies
-  - **WebSocket real-time updates**: live notifications for thread/reply creation, updates, and deletions
-  - Personalized group recommendations based on major, year, interests, and group overlap
-  - Search and filter groups by name, category, or tags
-- **Discovery & Recommendations**: Find public groups and users based on shared interests, majors, year, and group memberships
-  - **User recommendations**: Discover other users with similar profiles
-  - **User search**: Search users by name or email
-  - **Unified discovery feed**: Combined recommendations for groups and users (for onboarding and discovery UI)
-  - Recommendation algorithm considers interests, majors, year of study, and group overlap
-  - Private group chats excluded from public discovery (as required)
-  - Respects blocking: blocked users are excluded from recommendations
-- **Private Messaging & Group Chats**: Real-time private messaging with friends
-  - **Friend request system** (send/accept/decline friend requests)
-  - Friend management (list friends, remove friends)
-  - User blocking functionality (blocks messaging and friend requests)
-  - Create private group chats (minimum 2 friends required)
-  - Real-time WebSocket messaging
-  - Message notifications with mute option
-  - Group chat management (rename, avatar, add/remove participants)
-  - Friend and block validation (only friends can be in chats, blocked users rejected)
+Currently implemented:
+- **User Authentication**: Simple signup and login with session-based auth
+- **User Models**: Users, Friend Requests, Friendships
+- **Group Models**: Groups, Group Memberships
+- **Forum Models**: Threads and Replies
+- **Messaging Models**: Private Chats, Chat Messages
+- **Moderation Models**: Reported content tracking
 
+All models are defined and migrations are ready. API endpoints are minimal (signup/login/logout/me) for testing purposes.
 
-Important: blockers and notes
-- Profile API: not available in this environment — integration points would update the Profile API after onboarding. For MVP we store onboarding locally in a JSON store (`data/db.json`).
-- Taxonomy endpoints: if you have an external taxonomy service, replace `src/mock_taxonomy.js` with a real client. For now the mock provides a small list.
-
-License note
-- As requested, this repository's `package.json` does not declare a license field. If you later want to add an explicit license (MIT, Apache, etc.), add the `license` field back into `package.json` or add a `LICENSE` file.
-
-Labels (as requested): enhancement, area:infra, area:backend, area:django, priority:P1
 
 ## Quick Start
 
-### Option 1: Docker Compose (Recommended - All Services)
+### Running Django Backend
 
-Run both Node.js and Django backends with all infrastructure:
-
-```bash
-docker-compose up --build
-```
-
-Services will be available at:
-- **Frontend UI**: http://localhost:8080 (React application)
-- Node.js API: http://localhost:4000
-- Django API: http://localhost:8000
-- Django Admin: http://localhost:8000/admin/ (admin/admin123)
-- API Docs: http://localhost:8000/api/docs/
-- Prometheus: http://localhost:9090
-- Grafana: http://localhost:3000
-- MinIO Console: http://localhost:9000
-
-**Note**: The frontend UI is now integrated into the Docker Compose stack! When you run `docker-compose up`, the React application will be built and served via nginx on port 8080. API requests from the UI are automatically proxied to the Node.js backend (port 4000), and WebSocket connections work seamlessly.
-
-### Option 2: Node.js Backend Only (MVP)
-
-How to run (local dev):
-
-1. Install dependencies
+1. Navigate to backend directory:
 
 ```bash
-cd /workspaces/DawgPound
-npm install
+cd backend
 ```
 
-2. Start server
+2. Install Python dependencies:
 
 ```bash
-npm start
+pip install -r requirements.txt
 ```
 
-Server runs on http://localhost:4000 by default.
+3. Run migrations:
+
+```bash
+python manage.py migrate
+```
+
+4. Create a superuser (optional):
+
+```bash
+python manage.py createsuperuser
+```
+
+5. Start the development server:
+
+```bash
+python manage.py runserver
+```
+
+Django API will be available at:
+- **API Endpoints**: http://localhost:8000/api/
+- **Admin Panel**: http://localhost:8000/admin/
+
+### Testing
+
+Run the test suite:
+
+```bash
+cd backend
+pytest
+```
+
+Run with coverage:
+
+```bash
+pytest --cov=. --cov-report=html
+```
+
+Test the authentication endpoints:
+
+```bash
+python test_auth.py
+```
 
 Quick demo flow (curl examples):
 

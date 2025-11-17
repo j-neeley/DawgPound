@@ -7,12 +7,29 @@ from django.conf import settings
 
 
 @pytest.fixture(scope='session')
-def django_db_setup():
+def django_db_setup(django_db_blocker):
     """Override database settings for tests."""
+    # Use a file-backed SQLite DB for tests so migrations run reliably
+    # and tables persist for the test session.
+    test_db_path = str(settings.BASE_DIR / 'test_db.sqlite3')
     settings.DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': ':memory:',
+        'NAME': test_db_path,
+        'ATOMIC_REQUESTS': False,
+        'AUTOCOMMIT': True,
+        'CONN_MAX_AGE': 0,
+        'OPTIONS': {},
+        'TIME_ZONE': None,
+        'USER': '',
+        'PASSWORD': '',
+        'HOST': '',
+        'PORT': '',
     }
+
+    # Apply migrations explicitly since we're overriding django_db_setup.
+    from django.core.management import call_command
+    with django_db_blocker.unblock():
+        call_command('migrate', '--noinput')
 
 
 @pytest.fixture
@@ -29,9 +46,9 @@ def authenticated_user(db):
     user = User.objects.create_user(
         username='testuser',
         email='test@example.com',
-        university_email='test@university.edu',
         password='testpass123',
-        verified_at='2024-01-01T00:00:00Z'
+        first_name='Test',
+        last_name='User'
     )
     return user
 

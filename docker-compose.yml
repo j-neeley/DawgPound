@@ -1,66 +1,5 @@
 version: '3.8'
 services:
-  web:
-    build: .
-    ports:
-      - '4000:4000'
-    environment:
-      - PORT=4000
-      - OTEL_COLLECTOR_URL=http://otel-collector:4318/v1/traces
-      - SENTRY_DSN=${SENTRY_DSN}
-    depends_on:
-      - redis
-      - minio
-
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-
-  minio:
-    image: minio/minio:latest
-    command: server /data
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    ports:
-      - '9000:9000'
-    volumes:
-      - minio_data:/data
-
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: dp
-      POSTGRES_PASSWORD: dp
-      POSTGRES_DB: dawg
-    ports:
-      - '5432:5432'
-
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.86.0
-    volumes:
-      - ./observability/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
-    command: ["--config", "/etc/otel-collector-config.yaml"]
-    ports:
-      - '4318:4318' # OTLP HTTP
-      - '55681:55681'
-
-  prometheus:
-    image: prom/prometheus:v2.46.0
-    volumes:
-      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-    ports:
-      - '9090:9090'
-
-  grafana:
-    image: grafana/grafana:10.0.0
-    ports:
-      - '3000:3000'
-    depends_on:
-      - prometheus
-
   django:
     build:
       context: .
@@ -70,51 +9,24 @@ services:
     environment:
       - DEBUG=True
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-dev-key}
-      - POSTGRES_DB=dawg
-      - POSTGRES_USER=dp
-      - POSTGRES_PASSWORD=dp
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - USE_POSTGRES=false
       - ALLOWED_HOSTS=*
-    depends_on:
-      - postgres
-      - redis
+    volumes:
+      - ./backend:/app
+    command: python manage.py runserver 0.0.0.0:8000
 
-  celery:
-    build:
-      context: .
-      dockerfile: Dockerfile.django
-    command: celery -A dawgpound worker -l info
-    environment:
-      - DEBUG=True
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-dev-key}
-      - POSTGRES_DB=dawg
-      - POSTGRES_USER=dp
-      - POSTGRES_PASSWORD=dp
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-    depends_on:
-      - postgres
-      - redis
-      - django
+  # Optional: PostgreSQL database (not used by default, SQLite is default)
+  # Uncomment and set USE_POSTGRES=true in django service to use
+  # postgres:
+  #   image: postgres:15-alpine
+  #   environment:
+  #     POSTGRES_USER: dp
+  #     POSTGRES_PASSWORD: dp
+  #     POSTGRES_DB: dawg
+  #   ports:
+  #     - '5432:5432'
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - '8080:80'
-    depends_on:
-      - web
-    restart: unless-stopped
-
-volumes:
-  minio_data:
+# volumes:
+#   postgres_data:

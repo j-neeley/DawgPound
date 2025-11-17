@@ -10,30 +10,13 @@ from django.utils import timezone
 class User(AbstractUser):
     """
     Custom user model extending Django's AbstractUser.
-    Stores user profile and onboarding information.
+    Minimal fields for testing platform.
     """
-    # University email verification
-    university_email = models.EmailField(unique=True, db_index=True)
-    verification_token = models.CharField(max_length=255, blank=True, null=True)
-    verified_at = models.DateTimeField(blank=True, null=True)
-    
-    # Onboarding fields
-    onboarding_completed = models.BooleanField(default=False)
+    # Optional profile fields
     majors = models.JSONField(default=list, blank=True)  # List of majors
     interests_hobbies = models.JSONField(default=list, blank=True)  # List of interests
     year_of_study = models.CharField(max_length=50, blank=True)
     graduation_year = models.IntegerField(blank=True, null=True)
-    
-    # Privacy settings
-    privacy_settings = models.JSONField(default=dict, blank=True)
-    
-    # Social connections
-    blocked_users = models.ManyToManyField(
-        'self',
-        symmetrical=False,
-        related_name='blocked_by',
-        blank=True
-    )
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -42,17 +25,9 @@ class User(AbstractUser):
     class Meta:
         db_table = 'users'
         ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['university_email']),
-            models.Index(fields=['verification_token']),
-        ]
     
     def __str__(self):
-        return f"{self.username} ({self.university_email})"
-    
-    def is_verified(self):
-        """Check if user has verified their email."""
-        return self.verified_at is not None
+        return self.username
 
 
 class FriendRequest(models.Model):

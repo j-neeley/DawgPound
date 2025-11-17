@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DawgPound - Test Signup & Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button[type="submit"] {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        button[type="submit"]:hover {
+            transform: translateY(-2px);
+        }
+        
+        button[type="submit"]:active {
+            transform: translateY(0);
+        }
+        
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .user-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .user-info h3 {
+            margin-bottom: 12px;
+            color: #333;
+        }
+        
+        .user-info p {
+            margin-bottom: 8px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .form-container {
+            display: none;
+        }
+        
+        .form-container.active {
+            display: block;
+        }
+        
+        .logout-btn {
+            background: #dc3545;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐾 DawgPound</h1>
+        <p class="subtitle">Test the signup and login functionality</p>
+        
+        <div class="message" id="message"></div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('signup')">Sign Up</button>
+            <button class="tab" onclick="switchTab('login')">Login</button>
+        </div>
+        
+        <!-- Signup Form -->
+        <div id="signup-form" class="form-container active">
+            <form onsubmit="handleSignup(event)">
+                <div class="form-group">
+                    <label for="signup-username">Username</label>
+                    <input type="text" id="signup-username" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-firstname">First Name</label>
+                    <input type="text" id="signup-firstname" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-lastname">Last Name</label>
+                    <input type="text" id="signup-lastname" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" required minlength="6">
+                </div>
+                <button type="submit">Create Account</button>
+            </form>
+        </div>
+        
+        <!-- Login Form -->
+        <div id="login-form" class="form-container">
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+        
+        <!-- User Info (shown after login) -->
+        <div class="user-info" id="user-info">
+            <h3>Welcome!</h3>
+            <p><strong>Username:</strong> <span id="user-username"></span></p>
+            <p><strong>Email:</strong> <span id="user-email"></span></p>
+            <p><strong>Name:</strong> <span id="user-name"></span></p>
+            <button type="button" class="logout-btn" onclick="handleLogout()" style="width: 100%; padding: 12px; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Logout</button>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = '/api';
+        
+        function switchTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update forms
+            document.querySelectorAll('.form-container').forEach(f => f.classList.remove('active'));
+            document.getElementById(tab + '-form').classList.add('active');
+            
+            // Clear message
+            hideMessage();
+        }
+        
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = `message ${type}`;
+            msg.style.display = 'block';
+        }
+        
+        function hideMessage() {
+            document.getElementById('message').style.display = 'none';
+        }
+        
+        function showUserInfo(user) {
+            document.getElementById('user-username').textContent = user.username;
+            document.getElementById('user-email').textContent = user.email;
+            document.getElementById('user-name').textContent = `${user.first_name} ${user.last_name}`;
+            document.getElementById('user-info').style.display = 'block';
+            document.querySelectorAll('.form-container').forEach(f => f.style.display = 'none');
+            document.querySelector('.tabs').style.display = 'none';
+        }
+        
+        function hideUserInfo() {
+            document.getElementById('user-info').style.display = 'none';
+            document.querySelectorAll('.form-container').forEach(f => f.style.display = 'block');
+            document.querySelector('.tabs').style.display = 'flex';
+        }
+        
+        async function handleSignup(event) {
+            event.preventDefault();
+            hideMessage();
+            
+            const data = {
+                username: document.getElementById('signup-username').value,
+                email: document.getElementById('signup-email').value,
+                first_name: document.getElementById('signup-firstname').value,
+                last_name: document.getElementById('signup-lastname').value,
+                password: document.getElementById('signup-password').value
+            };
+            
+            console.log('Attempting signup with:', data);
+            
+            try {
+                const response = await fetch(`${API_BASE}/users/signup/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(data)
+                });
+                
+                console.log('Response status:', response.status);
+                const result = await response.json();
+                console.log('Response data:', result);
+                
+                if (response.ok) {
+                    showMessage('Account created successfully! Redirecting...', 'success');
+                    setTimeout(() => window.location.href = '/dashboard/', 1000);
+                } else {
+                    showMessage('Error: ' + JSON.stringify(result), 'error');
+                }
+            } catch (error) {
+                console.error('Signup error:', error);
+                showMessage('Connection error: ' + error.message + '. Make sure Django server is running on port 8000.', 'error');
+            }
+        }
+        
+        async function handleLogin(event) {
+            event.preventDefault();
+            hideMessage();
+            
+            const data = {
+                username: document.getElementById('login-username').value,
+                password: document.getElementById('login-password').value
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/users/login/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(data)
+                });
+                
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('Server returned non-JSON response');
+                }
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage('Login successful! Redirecting...', 'success');
+                    setTimeout(() => window.location.href = '/dashboard/', 1000);
+                } else {
+                    showMessage(result.error || 'Login failed', 'error');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showMessage('Error: ' + error.message, 'error');
+            }
+        }
+        
+        async function handleLogout() {
+            try {
+                const response = await fetch(`${API_BASE}/users/logout/`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    hideUserInfo();
+                    showMessage('Logged out successfully', 'success');
+                    // Clear forms
+                    document.querySelectorAll('form').forEach(f => f.reset());
+                } else {
+                    showMessage('Logout failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+            }
+        }
+        
+        // Check if user is already logged in
+        async function checkAuth() {
+            try {
+                const response = await fetch(`${API_BASE}/users/me/`, {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const user = await response.json();
+                    showUserInfo(user);
+                }
+            } catch (error) {
+                // User not logged in, that's fine
+            }
+        }
+        
+        // Check auth status on page load
+        checkAuth();
+    </script>
+</body>
+</html>

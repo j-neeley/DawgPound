@@ -6,26 +6,24 @@ The `urlpatterns` list routes URLs to views. For more information please see:
 """
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
+from django.views.generic import RedirectView
+from users.views import test_page, dashboard_page
 
 urlpatterns = [
+    # Redirect root to test page
+    path('', RedirectView.as_view(url='/test/', permanent=False)),
+    
     # Admin
     path('admin/', admin.site.urls),
     
-    # API Documentation
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    # Test page
+    path('test/', test_page, name='test_page'),
+    path('dashboard/', dashboard_page, name='dashboard'),
     
-    # JWT Authentication
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    
-    # App URLs (to be created)
-    path('api/auth/', include('users.urls')),
-    path('api/groups/', include('groups.urls')),
-    path('api/forums/', include('forums.urls')),
-    path('api/messages/', include('messaging.urls')),
-    path('api/moderation/', include('moderation.urls')),
+    # App URLs
+    path('api/', include('users.urls')),
+    path('api/', include('groups.urls')),
+    path('api/', include('forums.urls')),
+    path('api/', include('messaging.urls')),
+    path('api/', include('moderation.urls')),
 ]

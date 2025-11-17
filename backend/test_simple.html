@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Test - No CORS</title>
+</head>
+<body>
+    <h1>Test Signup (Same Origin)</h1>
+    
+    <form id="signupForm">
+        <input type="text" id="username" placeholder="Username" required><br>
+        <input type="email" id="email" placeholder="Email" required><br>
+        <input type="text" id="first_name" placeholder="First Name" required><br>
+        <input type="text" id="last_name" placeholder="Last Name" required><br>
+        <input type="password" id="password" placeholder="Password" required><br>
+        <button type="submit">Sign Up</button>
+    </form>
+    
+    <div id="result"></div>
+    
+    <script>
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                username: document.getElementById('username').value,
+                email: document.getElementById('email').value,
+                first_name: document.getElementById('first_name').value,
+                last_name: document.getElementById('last_name').value,
+                password: document.getElementById('password').value
+            };
+            
+            try {
+                const response = await fetch('/api/users/signup/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                document.getElementById('result').innerHTML = 
+                    '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    '<p style="color: red;">Error: ' + error.message + '</p>';
+            }
+        });
+    </script>
+</body>
+</html>
