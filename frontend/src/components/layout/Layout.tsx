@@ -110,16 +110,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </div>
                 </>
               ) : (
-                <div className="space-x-2">
-                  <Link to="/login">
-                    <Button variant="ghost" size="sm">
-                      Login
-                    </Button>
+                <div className="flex items-center space-x-2">
+                  <Link
+                    to="/login"
+                    className="inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 px-3 py-1.5 text-sm bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-500 dark:text-gray-300 dark:hover:bg-gray-800"
+                  >
+                    Login
                   </Link>
-                  <Link to="/signup">
-                    <Button variant="primary" size="sm">
-                      Sign Up
-                    </Button>
+                  <Link
+                    to="/signup"
+                    className="inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 px-3 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600"
+                  >
+                    Sign Up
                   </Link>
                 </div>
               )}
