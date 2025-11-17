@@ -14,6 +14,7 @@ import { OnboardingWizard } from './components/auth/OnboardingWizard';
 // Lazy load pages
 import { lazy, Suspense } from 'react';
 
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 const HomePage = lazy(() => import('./pages/HomePage'));
 const GroupsPage = lazy(() => import('./pages/GroupsPage'));
 const GroupDetailPage = lazy(() => import('./pages/GroupDetailPage'));
@@ -60,9 +61,27 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 };
 
 function AppRoutes() {
+  const { user, isLoading } = useAuth();
+
   return (
     <Router>
       <Routes>
+        {/* Public Landing Page */}
+        <Route
+          path="/"
+          element={
+            isLoading ? (
+              <LoadingPage />
+            ) : user ? (
+              <Navigate to="/home" replace />
+            ) : (
+              <Suspense fallback={<LoadingPage />}>
+                <LandingPage />
+              </Suspense>
+            )
+          }
+        />
+
         {/* Public Routes */}
         <Route path="/signup" element={<SignupForm />} />
         <Route path="/login" element={<LoginForm />} />
@@ -79,7 +98,7 @@ function AppRoutes() {
 
         {/* Protected Routes */}
         <Route
-          path="/"
+          path="/home"
           element={
             <ProtectedRoute>
               <Layout>

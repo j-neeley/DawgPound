@@ -29,9 +29,22 @@ router.post('/signup', (req, res) => {
   if (!email) return res.status(400).json({ error: 'email required' });
   if (!isUniversityEmail(email)) return res.status(403).json({ error: 'email must be a university address' });
 
-  // prevent duplicate emails
+  // Check for existing user
   const existing = store.listUsers().find((u) => u.email && u.email.toLowerCase() === email.toLowerCase());
-  if (existing) return res.status(409).json({ error: 'email already registered' });
+  if (existing) {
+    // For existing users, regenerate verification token and allow them to "login"
+    const newVerificationToken = uuidv4();
+    store.updateUser(existing.id, { 
+      verificationToken: newVerificationToken,
+      verified: false 
+    });
+    // Return the new token so they can verify and login
+    return res.json({ 
+      message: 'verification token regenerated', 
+      verificationToken: newVerificationToken, 
+      userId: existing.id 
+    });
+  }
 
   const user = {
     id: uuidv4(),
