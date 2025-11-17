@@ -8,6 +8,7 @@ import { LoadingPage } from './components/common/LoadingSpinner';
 
 // Auth components
 import { SignupForm } from './components/auth/SignupForm';
+import { LoginForm } from './components/auth/LoginForm';
 import { OnboardingWizard } from './components/auth/OnboardingWizard';
 
 // Lazy load pages
@@ -48,7 +49,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (!user) {
-    return <Navigate to="/signup" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (requireOnboarding && !user.onboardingCompleted) {
@@ -64,7 +65,7 @@ function AppRoutes() {
       <Routes>
         {/* Public Routes */}
         <Route path="/signup" element={<SignupForm />} />
-        <Route path="/login" element={<SignupForm />} />
+        <Route path="/login" element={<LoginForm />} />
 
         {/* Onboarding */}
         <Route
