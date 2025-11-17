@@ -7,6 +7,7 @@ import { authService } from '../../services/auth.service';
 import { useAuth } from '../../contexts/AuthContext';
 
 export const SignupForm: React.FC = () => {
+  console.log('[SignupForm] Component mounted');
   const navigate = useNavigate();
   const { login } = useAuth();
   const [formData, setFormData] = useState({
@@ -20,14 +21,17 @@ export const SignupForm: React.FC = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('[SignupForm] Submitting signup form', { email: formData.email, name: formData.name });
     setIsLoading(true);
     setError('');
 
     try {
       const response = await authService.signup(formData);
+      console.log('[SignupForm] Signup successful', { userId: response.userId });
       setVerificationToken(response.verificationToken);
       setShowVerification(true);
     } catch (err: any) {
+      console.error('[SignupForm] Signup failed', err);
       setError(err.response?.data?.error || 'Signup failed. Please try again.');
     } finally {
       setIsLoading(false);

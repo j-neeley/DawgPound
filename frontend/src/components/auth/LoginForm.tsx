@@ -7,6 +7,7 @@ import { authService } from '../../services/auth.service';
 import { useAuth } from '../../contexts/AuthContext';
 
 export const LoginForm: React.FC = () => {
+  console.log('[LoginForm] Component mounted');
   const navigate = useNavigate();
   const { login } = useAuth();
   const [formData, setFormData] = useState({
@@ -19,6 +20,7 @@ export const LoginForm: React.FC = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('[LoginForm] Submitting login form', { email: formData.email });
     setIsLoading(true);
     setError('');
 
@@ -29,9 +31,11 @@ export const LoginForm: React.FC = () => {
         email: formData.email,
         name: '', // Name not required for existing users
       });
+      console.log('[LoginForm] Login request successful');
       setVerificationToken(response.verificationToken);
       setShowVerification(true);
     } catch (err: any) {
+      console.error('[LoginForm] Login failed', err);
       setError(err.response?.data?.error || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
