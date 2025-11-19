@@ -67,6 +67,9 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# Trust proxy headers for HTTPS forwarding (e.g., Codespaces port forwarding)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 ROOT_URLCONF = 'dawgpound.urls'
 
 TEMPLATES = [

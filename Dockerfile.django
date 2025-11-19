@@ -33,28 +33,11 @@ RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pyth
 # Copy project
 COPY backend/ .
 
-# Collect static files (will be done in entrypoint)
-# RUN python manage.py collectstatic --noinput
-
-# Create entrypoint script
-RUN echo '#!/bin/bash\n\
-set -e\n\
-\n\
-echo "Waiting for postgres..."\n\
-while ! nc -z $POSTGRES_HOST $POSTGRES_PORT; do\n\
-  sleep 0.1\n\
-done\n\
-echo "PostgreSQL started"\n\
-\n\
-echo "Running migrations..."\n\
-python manage.py migrate --noinput\n\
-\n\
-echo "Creating superuser if needed..."\n\
-python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username=\"admin\").exists() or User.objects.create_superuser(\"admin\", \"admin@dawgpound.local\", \"admin123\", university_email=\"admin@dawgpound.local\")" || true\n\
-\n\
-exec "$@"' > /entrypoint.sh && chmod +x /entrypoint.sh
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 8000
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["gunicorn", "dawgpound.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "120"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
